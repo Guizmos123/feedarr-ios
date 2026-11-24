@@ -1,0 +1,81 @@
+//
+//  FeedarrReleaseCard.swift
+//  Yattee
+//
+//  Reusable catalogue card; optional selection never routes to video playback.
+//
+
+import Foundation
+import SwiftUI
+
+struct FeedarrReleaseCard: View {
+    let release: FeedarrRelease
+    let posterService: FeedarrPosterService
+    var onSelectRelease: ((FeedarrRelease) -> Void)? = nil
+    var showsInformation = true
+    var titleLineLimit: Int? = nil
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if let onSelectRelease {
+            Button { onSelectRelease(release) } label: {
+                if showsInformation { content }
+                else { content.accessibilityLabel(title) }
+            }
+                .buttonStyle(.plain)
+        } else {
+            content
+        }
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: showsInformation ? 8 : 0) {
+            FeedarrPosterView(release: release, service: posterService)
+                .frame(maxWidth: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            if showsInformation {
+                VStack(alignment: .leading, spacing: 2) {
+                    Group {
+                        if let titleLineLimit {
+                            Text(title)
+                                .font(.subheadline.weight(.medium))
+                                .lineLimit(titleLineLimit)
+                        } else if reduceMotion {
+                            Text(title)
+                                .font(.subheadline.weight(.medium))
+                                .lineLimit(1)
+                        } else {
+                            Text(title)
+                                .font(.subheadline.weight(.medium))
+                                .lineLimit(2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipped()
+                    .allowsHitTesting(false)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(title)
+
+                    Text(secondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1, reservesSpace: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+
+    private var title: String {
+        [release.titleClean, release.title].compactMap { $0 }.first { !$0.isEmpty }
+            ?? "Sans titre"
+    }
+
+    private var secondary: String {
+        [release.year.map(String.init), release.resolution].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+}
